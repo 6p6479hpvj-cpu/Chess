@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-board="slate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChessSense AI</title>
+<style>
+:root{--bg:#0f1a22;--p:#16242f;--p2:#1e303d;--tx:#e7eef3;--mu:#95a9b7;--ac:#5fd0c0;--on:#06231f;--bd:#294353;--bad:#e5645f;--warn:#e9b34f;--ok:#4fc79b;color-scheme:dark}
+[data-theme=light]{--bg:#eef2f5;--p:#fff;--p2:#e6edf2;--tx:#13232e;--mu:#586f7e;--ac:#0d7a6e;--on:#fff;--bd:#cbd8e1;--bad:#c33d38;--warn:#9a6a0b;--ok:#1b8a63;color-scheme:light}
+[data-board=slate]{--l:#dfe5e8;--d:#6d8796}[data-board=sand]{--l:#ecd9b5;--d:#ae8760}[data-board=moss]{--l:#e5ead3;--d:#789a63}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;line-height:1.15;margin:0 0 .5em;font-weight:600}
+h1{font-size:clamp(2rem,5vw,3.4rem)}h2{font-size:1.5rem}h3{font-size:1.1rem}
+a{color:var(--ac)}p{margin:.4em 0 .8em}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:18px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--bd)}
+.hbar{display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto;padding:10px 18px}
+.brand{display:flex;align-items:center;gap:9px;font:600 1.25rem Georgia,serif;color:var(--tx);text-decoration:none;margin-right:auto}
+.mark{width:22px;height:22px;display:grid;grid-template-columns:1fr 1fr;border-radius:3px;overflow:hidden}.mark i{background:var(--ac)}.mark i:nth-child(2),.mark i:nth-child(3){background:var(--p2)}
+nav{display:flex;gap:2px;overflow-x:auto;max-width:1120px;margin:0 auto;padding:0 12px 6px}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mu);text-decoration:none;white-space:nowrap}
+nav a[aria-current]{background:var(--p2);color:var(--tx)}
+body[data-v=l] nav{display:none}
+select,input[type=text],input[type=search]{background:var(--p2);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;font:inherit}
+.btn{background:var(--ac);color:var(--on);border:0;border-radius:8px;padding:9px 16px;font:600 .95rem inherit;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--bd)}.btn.sm{padding:5px 10px;font-size:.85rem}
+.demo{background:var(--p2);color:var(--mu);font-size:.85rem;text-align:center;padding:6px 12px}
+.card{background:var(--p);border:1px solid var(--bd);border-radius:10px;padding:16px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.big{font:600 2.2rem Georgia,serif}.mu,.note{color:var(--mu);font-size:.88rem}
+.tag{display:inline-block;font-size:.75rem;border:1px solid var(--warn);color:var(--warn);border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:36px;align-items:center;padding-top:36px}
+.lead{font-size:1.15rem;color:var(--mu);max-width:34em}
+.feat{border-left:3px solid var(--ac);padding-left:14px}
+.board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;width:100%;max-width:560px;container-type:inline-size;border-radius:6px;overflow:hidden;box-shadow:0 10px 30px #0006}
+.sq{border:0;padding:0;margin:0;position:relative;display:grid;place-items:center;background:var(--l);cursor:pointer}
+.sq.d{background:var(--d)}.sq i{font-style:normal;font-size:11cqw;line-height:1;transition:transform .15s}
+.sq i.w{color:#fffdf4;text-shadow:0 0 2px #000,0 1px 1px #000,0 0 3px #000}.sq i.b{color:#161a1e;text-shadow:0 0 1px #fff8}
+.sq.last{background-image:linear-gradient(#ffd65e73,#ffd65e73)}.sq.sel{box-shadow:inset 0 0 0 4px #ffd45e}
+.sq.tgt::after{content:"";position:absolute;width:28%;height:28%;border-radius:50%;background:#1a283466}
+.sq.cap{box-shadow:inset 0 0 0 4px #e5645fcc}.sq.chk{background-image:radial-gradient(circle,#e5645f,#0000 75%)}.sq.hint{box-shadow:inset 0 0 0 4px var(--ac)}
+.sq small{display:none;position:absolute;font-size:2.4cqw;line-height:1;opacity:.7;color:#223}.co .sq small{display:block}.sq small.r{top:3px;left:3px}.sq small.f{bottom:3px;right:3px}
+.play{display:grid;grid-template-columns:minmax(0,560px) minmax(260px,1fr);gap:20px;align-items:start}
+.ml{display:grid;grid-template-columns:34px 1fr 1fr;gap:2px;max-height:240px;overflow:auto;font-size:.95rem}
+.ml span{color:var(--mu);padding:3px 4px}.ml button{background:none;border:0;color:var(--tx);text-align:left;padding:3px 6px;border-radius:5px;cursor:pointer;font:inherit}.ml button[aria-current]{background:var(--p2);outline:1px solid var(--ac)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--mu)}
+.c-best,.c-excellent{background:var(--ok)}.c-good{background:#7fa6b8}.c-inacc{background:var(--warn)}.c-mistake{background:#e98a4f}.c-blunder{background:var(--bad)}
+.clocks{display:flex;gap:10px;margin-bottom:10px}.clocks div{flex:1;background:var(--p2);border-radius:8px;padding:8px 12px;font:600 1.4rem ui-monospace,monospace}
+.clocks .on{outline:2px solid var(--ac)}.clocks small{display:block;font:.75rem system-ui;color:var(--mu)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+label{display:block;font-size:.88rem;color:var(--mu);margin:8px 0}label select,label input[type=text]{display:block;width:100%;margin-top:3px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bd);font-size:.92rem}th{color:var(--mu);font-weight:500}
+.bar{height:9px;background:var(--p2);border-radius:5px;overflow:hidden;display:flex}.bar i{display:block;height:100%}
+.chat{height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.msg{max-width:85%;padding:9px 12px;border-radius:12px;background:var(--p2)}.msg.u{align-self:flex-end;background:var(--ac);color:var(--on)}
+.chip{border:1px solid var(--bd);background:none;color:var(--tx);border-radius:99px;padding:5px 12px;cursor:pointer;font:inherit;font-size:.88rem}.chip[aria-pressed=true]{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.chart{width:100%;height:auto}.ev{cursor:pointer}
+.av{width:72px;height:72px;border-radius:50%;background:var(--ac);color:var(--on);display:grid;place-items:center;font:600 2rem Georgia}
+dialog{background:var(--p);color:var(--tx);border:1px solid var(--bd);border-radius:12px;max-width:380px;width:92%}dialog::backdrop{background:#000a}
+dialog .btn{display:block;width:100%;margin:8px 0}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,40px);background:var(--tx);color:var(--bg);padding:9px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:9}#toast.on{opacity:1;transform:translate(-50%,0)}
+footer{color:var(--mu);font-size:.85rem;text-align:center;padding:24px 18px}
+@media(max-width:820px){.hero,.play{grid-template-columns:1fr}.hero{gap:20px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body data-v="l">
+<header><div class="hbar" id="hb-bar"></div><nav id="nav" aria-label="Main"></nav></header>
+<div class="demo" id="demo"></div>
+<main id="app" tabindex="-1"></main>
+<footer id="foot"></footer>
+<dialog id="auth"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+'use strict';
+/* ===== Translations: [en, ru, kk] ===== */
+const T={
+dashboard:['Dashboard','Главная','Басты бет'],play:['Play','Игра','Ойын'],analysis:['Analysis','Разбор','Талдау'],coach:['AI Coach','ИИ-тренер','ЖИ жаттықтырушы'],training:['Training','Тренировка','Жаттығу'],stats:['Analytics','Аналитика','Аналитика'],history:['History','Партии','Ойындар'],friends:['Friends','Друзья','Достар'],profile:['Profile','Профиль','Профиль'],
+demo:['Demo build: sample data, no chess engine, no accounts, no AI model connected.','Демо-версия: примерные данные, нет шахматного движка, аккаунтов и подключённой ИИ-модели.','Демо нұсқа: үлгі деректер, шахмат қозғалтқышы, аккаунттар және жалғанған ЖИ моделі жоқ.'],
+sample:['sample','пример','үлгі'],open:['Open the demo','Открыть демо','Демоны ашу'],signin:['Sign in','Войти','Кіру'],
+h1:['Know why the move failed.','Поймите, почему ход не сработал.','Жүрістің неге нәтиже бермегенін түсініңіз.'],
+lead:['Most tools show the best move. ChessSense AI is built to explain what you missed and what to look for next time. Free, with no plans or paywalls.','Большинство сервисов показывают лучший ход. ChessSense AI объясняет, что вы упустили и на что смотреть в следующий раз. Бесплатно, без тарифов и платных функций.','Көп сервис ең жақсы жүрісті ғана көрсетеді. ChessSense AI нені байқамағаныңызды және келесі жолы неге қарау керегін түсіндіреді. Тегін, тарифсіз.'],
+hn:['Sample: 7…Ke6 is a mistake. The king walks into the open. Ke8 keeps it safe.','Пример: 7…Кре6 — ошибка. Король выходит на открытое место. Кре8 безопаснее.','Үлгі: 7…Кре6 қате. Патша ашық жерге шығады. Кре8 қауіпсіз.'],
+f1:['Move-by-move analysis','Разбор ход за ходом','Жүрістеп талдау'],f1d:['Every move gets a label and a plain reason. Click any move to see it.','У каждого хода есть оценка и понятная причина. Нажмите на любой ход.','Әр жүріске баға мен түсінікті себеп беріледі. Кез келген жүрісті басыңыз.'],
+f2:['AI Coach','ИИ-тренер','ЖИ жаттықтырушы'],f2d:['Ask about a mistake, an opening or an endgame. Pick a quick or a detailed answer.','Спросите про ошибку, дебют или эндшпиль. Ответ можно выбрать краткий или подробный.','Қате, ашылу немесе эндшпиль туралы сұраңыз. Қысқа немесе толық жауап таңдаңыз.'],
+f3:['Training with a purpose','Тренировка с целью','Мақсатты жаттығу'],f3d:['Exercises follow your weak spots instead of a random puzzle feed.','Задачи подбираются под ваши слабые места, а не наугад.','Есептер кездейсоқ емес, әлсіз тұстарыңызға қарай таңдалады.'],
+diffh:['What is different','Чем это отличается','Несімен ерекшеленеді'],
+diffp:['The plan is simple. Stockfish does the chess math and a language model turns its findings into words. Neither is connected in this demo, so every number you see is a labeled sample.','План простой: Stockfish считает, а языковая модель пересказывает его выводы словами. В демо не подключено ни то, ни другое, поэтому все числа здесь помечены как примеры.','Жоспар қарапайым: Stockfish есептейді, ал тілдік модель оның қорытындысын сөзбен айтады. Демода екеуі де жалғанбаған, сондықтан барлық сандар үлгі ретінде белгіленген.'],
+foot:['ChessSense AI demo. Not connected: Stockfish, a language model, accounts, online play, Chess.com and Lichess import.','Демо ChessSense AI. Не подключены: Stockfish, языковая модель, аккаунты, онлайн-игра, импорт из Chess.com и Lichess.','ChessSense AI демосы. Жалғанбаған: Stockfish, тілдік модель, аккаунттар, онлайн ойын, Chess.com және Lichess импорты.'],
+hi:['Demo player','Демо-игрок','Демо-ойыншы'],rating:['Rating','Рейтинг','Рейтинг'],acc:['Accuracy','Точность','Дәлдік'],record:['Wins / draws / losses','Победы / ничьи / поражения','Жеңіс / тең / жеңіліс'],prog:['Training today','Тренировка сегодня','Бүгінгі жаттығу'],recent:['Recent games','Последние партии','Соңғы ойындар'],weak:['Weak spots','Слабые места','Әлсіз тұстар'],
+w1:['Pieces left hanging','Фигуры без защиты','Қорғалмаған фигуралар'],w2:['Back-rank safety','Безопасность последней горизонтали','Соңғы горизонталь қауіпсіздігі'],w3:['Rook endgames','Ладейные эндшпили','Қашар эндшпильдері'],
+rec:['Recommended','Рекомендуем','Ұсынамыз'],tip:['Coach note','Заметка тренера','Жаттықтырушы жазбасы'],tipx:['Three of the last five losses began with an unprotected piece. The king-safety set is a good start.','Три из пяти последних поражений начались с незащищённой фигуры. Начните с задач на безопасность короля.','Соңғы бес жеңілістің үшеуі қорғалмаған фигурадан басталды. Патша қауіпсіздігі жаттығуынан бастаңыз.'],
+acpl:['Average centipawn loss: 31','Средняя потеря в сотых пешки: 31','Орташа жоғалту, пешканың жүздігі: 31'],
+playnote:['Local demo. The opponent plays simple moves and is not an engine. No online games.','Локальное демо. Соперник делает простые ходы и не является движком. Онлайн-игры нет.','Жергілікті демо. Қарсылас қарапайым жүрістер жасайды, қозғалтқыш емес. Онлайн ойын жоқ.'],
+mode:['Opponent','Соперник','Қарсылас'],m_ai:['Demo bot','Демо-бот','Демо-бот'],m_fr:['Friend, same screen','Друг за этим экраном','Дос, бір экранда'],tcl:['Time control','Контроль времени','Уақыт бақылауы'],
+bullet:['Bullet, 1 min','Пуля, 1 мин','Оқ, 1 мин'],blitz:['Blitz, 5 min','Блиц, 5 мин','Блиц, 5 мин'],rapid:['Rapid, 10 min','Рапид, 10 мин','Рапид, 10 мин'],classical:['Classical, 30 min','Классика, 30 мин','Классика, 30 мин'],
+side:['Your color','Ваш цвет','Түсіңіз'],wn:['White','Белые','Ақтар'],bn:['Black','Чёрные','Қаралар'],newg:['New game','Новая партия','Жаңа ойын'],undo:['Undo','Отмена хода','Қайтару'],flip:['Flip board','Перевернуть доску','Тақтаны аудару'],resign:['Resign','Сдаться','Берілу'],
+tm:['% to move','Ход: %','Жүріс: %'],mate:['Checkmate. % wins.','Мат. Победа: %.','Мат. Жеңімпаз: %.'],timeout:['Time out. % loses.','Время вышло. Проигрыш: %.','Уақыт бітті. Жеңіліс: %.'],resigned:['% resigned.','Сдача: %.','Берілді: %.'],drawn:['Draw.','Ничья.','Тең ойын.'],stale:['Stalemate. Draw.','Пат. Ничья.','Пат. Тең ойын.'],check:['Check.','Шах.','Шах.'],moves:['Moves','Ходы','Жүрістер'],
+pgn:['Load a PGN file','Загрузить PGN-файл','PGN файлын жүктеу'],pgnerr:['Could not read this PGN. Check the file and try again.','Не удалось прочитать PGN. Проверьте файл и попробуйте снова.','PGN оқылмады. Файлды тексеріп, қайталап көріңіз.'],
+noeval:['No engine is connected, so this game shows moves only. Evaluations and labels need Stockfish.','Движок не подключён, поэтому здесь только ходы. Оценки и пометки появятся вместе со Stockfish.','Қозғалтқыш жалғанбаған, сондықтан тек жүрістер көрсетіледі. Бағалар мен белгілер Stockfish арқылы болады.'],
+samplelbl:['Sample analysis. Values are illustrative, not engine output.','Пример разбора. Значения условные, это не результат движка.','Талдау үлгісі. Мәндер шартты, қозғалтқыш нәтижесі емес.'],
+opening:['Opening','Дебют','Ашылу'],opn:['Italian Game, Fried Liver line','Итальянская партия, жареная печень','Итальян партиясы, Fried Liver желісі'],alt:['Better','Лучше','Жақсырақ'],critical:['Critical moments','Критические моменты','Шешуші сәттер'],summary:['Summary','Итоги','Қорытынды'],graph:['Evaluation, White, in pawns','Оценка в пешках, за белых','Бағалау, ақтар үшін, пешкамен'],
+start:['Starting position. Click a move or use the arrow keys.','Начальная позиция. Нажмите на ход или используйте стрелки.','Бастапқы қалып. Жүрісті басыңыз немесе көрсеткілерді қолданыңыз.'],
+swing:['Evaluation moved from % to %.','Оценка изменилась с % на %.','Баға % мәнінен % мәніне өзгерді.'],
+c_best:['Best','Лучший','Үздік'],c_excellent:['Excellent','Отличный','Тамаша'],c_good:['Good','Хороший','Жақсы'],c_inacc:['Inaccuracy','Неточность','Дәлсіздік'],c_mistake:['Mistake','Ошибка','Қате'],c_blunder:['Blunder','Грубая ошибка','Өрескел қате'],
+e_best:['The strongest choice here.','Сильнейший выбор в этой позиции.','Бұл қалыптағы ең күшті таңдау.'],e_excellent:['Nearly as good as the best move.','Почти так же хорошо, как лучший ход.','Үздік жүрістен сәл ғана кем.'],e_good:['Solid. It keeps the position balanced.','Надёжный ход. Позиция остаётся ровной.','Сенімді жүріс. Қалып теңгерімде қалады.'],
+e_inacc:['It works, but a stronger move was available.','Ход рабочий, но был сильнее.','Жүріс жұмыс істейді, бірақ күштірегі бар еді.'],e_mistake:['This gives the opponent a clear edge. Check what the move leaves exposed.','Это даёт сопернику ясный перевес. Проверьте, что ход оставляет открытым.','Бұл қарсыласқа анық артықшылық береді. Жүріс нені ашық қалдырғанын тексеріңіз.'],e_blunder:['A serious error that changes the game. Look for the opponent’s forcing replies first.','Серьёзная ошибка, она меняет исход партии. Сначала ищите форсированные ответы соперника.','Ойын барысын өзгертетін ауыр қате. Алдымен қарсыластың мәжбүр ететін жауаптарын іздеңіз.'],
+cintro:['Ask about a mistake, an opening, tactics or endgames.','Спросите про ошибку, дебют, тактику или эндшпиль.','Қате, ашылу, тактика немесе эндшпиль туралы сұраңыз.'],cph:['Type a question','Введите вопрос','Сұрақ жазыңыз'],send:['Send','Отправить','Жіберу'],quick:['Quick','Кратко','Қысқа'],detail:['Detailed','Подробно','Толық'],
+cdemo:['Demo coach: replies are prewritten. No language model or engine is connected.','Демо-тренер: ответы заготовлены заранее. Языковая модель и движок не подключены.','Демо жаттықтырушы: жауаптар алдын ала жазылған. Тілдік модель мен қозғалтқыш жалғанбаған.'],
+ch1:['Why was my move bad?','Почему мой ход плохой?','Менің жүрісім неге нашар?'],ch2:['Opening basics','Основы дебюта','Ашылу негіздері'],ch3:['Tactical patterns','Тактические приёмы','Тактикалық тәсілдер'],ch4:['Endgame tips','Советы по эндшпилю','Эндшпиль кеңестері'],clear:['Clear chat','Очистить чат','Чатты тазалау'],
+lv0:['Beginner','Начинающий','Бастаушы'],lv1:['Intermediate','Средний','Орта'],lv2:['Advanced','Продвинутый','Жоғары'],
+cat_all:['All','Все','Барлығы'],cat_tactics:['Tactics','Тактика','Тактика'],cat_openings:['Openings','Дебюты','Ашылулар'],cat_endgames:['Endgames','Эндшпили','Эндшпильдер'],cat_strategy:['Strategy','Стратегия','Стратегия'],cat_positional:['Positional play','Позиционная игра','Позициялық ойын'],cat_king:['King safety','Безопасность короля','Патша қауіпсіздігі'],cat_calc:['Calculation','Расчёт','Есептеу'],
+ask:['Find the best move for White.','Найдите лучший ход за белых.','Ақтар үшін ең жақсы жүрісті табыңыз.'],okm:['Correct.','Верно.','Дұрыс.'],no:['Not that one. Try again.','Не тот ход. Попробуйте ещё.','Бұл емес. Қайталап көріңіз.'],tprog:['Solved: %','Решено: %','Шешілді: %'],treset:['Reset progress','Сбросить прогресс','Прогресті тазалау'],tempty:['No demo exercises for this category and level yet.','Для этой категории и уровня демо-задач пока нет.','Бұл санат пен деңгейге демо есеп әзірге жоқ.'],
+tdemo:['Sample exercises with a fixed order. Nothing here is generated by AI.','Примерные задачи в фиксированном порядке. Ничего не создано ИИ.','Тіркелген тәртіптегі үлгі есептер. Мұнда ЖИ жасаған ештеңе жоқ.'],next:['Next','Дальше','Келесі'],
+ex1:['The back rank is blocked by the king’s own pawns. The rook delivers mate on the open eighth rank.','Последнюю горизонталь перекрыли собственные пешки короля. Ладья ставит мат на свободной восьмой линии.','Соңғы горизонталь патшаның өз пешкаларымен жабылған. Қашар бос сегізінші горизонтальда мат қояды.'],
+ex2:['The knight jumps to c7 with check and attacks the rook on a8 at the same time. That is a fork.','Конь прыгает на c7 с шахом и одновременно бьёт ладью a8. Это вилка.','Ат шахпен c7-ге секіріп, a8-дегі қашарды да соғады. Бұл айыр.'],
+ex3:['The queen mates on g7, protected by the king. The black king has no free square.','Ферзь ставит мат на g7 под защитой короля. У чёрного короля нет свободных полей.','Ферзь g7-де патшаның қорғауымен мат қояды. Қара патшаның бос өрісі жоқ.'],
+ex4:['The king is boxed in by its own rook and pawns, so the knight on f7 mates. This is a smothered mate.','Король зажат собственной ладьёй и пешками, поэтому конь f7 ставит мат. Это удушающий мат.','Патша өз қашары мен пешкаларымен қысылған, сондықтан f7-дегі ат мат қояды. Бұл тұншықтыру маты.'],
+ex5:['The queen takes f7 with mate, backed by the bishop on c4. This is the Scholar’s mate, so guard f7 early.','Ферзь берёт f7 с матом под защитой слона c4. Это детский мат, поэтому рано защищайте f7.','Ферзь f7-ні алып, c4 офицерінің қолдауымен мат қояды. Бұл балалар маты, сондықтан f7-ні ертерек қорғаңыз.'],
+ex6:['The passed pawn has a clear road. Push it and promote to a queen before the king can interfere.','У проходной пешки свободный путь. Продвиньте её и превратите в ферзя, пока король не помешал.','Өтпелі пешканың жолы ашық. Патша кедергі жасамай тұрғанда оны алға жүргізіп, ферзь жасаңыз.'],
+s_rating:['Rating progression','Динамика рейтинга','Рейтинг серпіні'],s_wdl:['Results','Результаты','Нәтижелер'],s_color:['By color','По цветам','Түс бойынша'],s_open:['Openings','Дебюты','Ашылулар'],s_err:['Errors per 100 moves','Ошибок на 100 ходов','100 жүріске қате'],s_tac:['Missed tactics','Пропущенная тактика','Өткізіп алған тактика'],
+ph_o:['Opening','Дебют','Ашылу'],ph_m:['Middlegame','Миттельшпиль','Ортаңғы ойын'],ph_e:['Endgame','Эндшпиль','Эндшпиль'],fork:['Forks','Вилки','Айырлар'],pin:['Pins','Связки','Байлау'],backrank:['Back-rank mates','Маты по последней горизонтали','Соңғы горизонталь маты'],
+win:['Win','Победа','Жеңіс'],draw:['Draw','Ничья','Тең'],loss:['Loss','Поражение','Жеңіліс'],
+h_opp:['Opponent','Соперник','Қарсылас'],h_res:['Result','Итог','Нәтиже'],h_date:['Date','Дата','Күні'],h_rate:['Rating','Рейтинг','Рейтинг'],h_mv:['Moves','Ходов','Жүріс'],h_st:['Status','Статус','Күйі'],an:['Analyzed','Разобрана','Талданған'],nan:['Not analyzed','Не разобрана','Талданбаған'],o2:['Open','Открыть','Ашу'],
+fsearch:['Search users','Поиск игроков','Ойыншыларды іздеу'],fadd:['Add','Добавить','Қосу'],fsent:['Request sent (demo)','Запрос отправлен (демо)','Сұраныс жіберілді (демо)'],freq:['Friend requests','Запросы в друзья','Достық сұраныстары'],facc:['Accept','Принять','Қабылдау'],fdec:['Decline','Отклонить','Қабылдамау'],fl:['Friends','Друзья','Достар'],finv:['Invite','Пригласить','Шақыру'],finvsent:['Invitation sent (demo)','Приглашение отправлено (демо)','Шақыру жіберілді (демо)'],finc:['Game invitations','Приглашения в игру','Ойынға шақырулар'],fnone:['Nothing here yet.','Пока пусто.','Әзірге бос.'],finvtxt:['% invites you to a blitz game','% зовёт вас сыграть блиц','% сізді блиц ойынына шақырады'],
+uname:['Username','Имя пользователя','Пайдаланушы аты'],lvl:['Your level','Ваш уровень','Деңгейіңіз'],language:['Language','Язык','Тіл'],theme:['Theme','Тема','Тақырып'],thd:['Dark','Тёмная','Қараңғы'],thl:['Light','Светлая','Жарық'],board:['Board style','Стиль доски','Тақта стилі'],bslate:['Slate','Сланец','Тақтатас'],bsand:['Sand','Песок','Құм'],bmoss:['Moss','Мох','Мүк'],coords:['Show coordinates','Показывать координаты','Координаттарды көрсету'],style:['Playing style','Стиль игры','Ойын стилі'],stylev:['Tactical','Тактический','Тактикалық'],saved:['Saved.','Сохранено.','Сақталды.'],pdemo:['Demo profile. Settings stay in this browser only.','Демо-профиль. Настройки хранятся только в этом браузере.','Демо профиль. Баптаулар тек осы браузерде сақталады.'],
+ah:['Sign in','Вход','Кіру'],google:['Continue with Google','Продолжить через Google','Google арқылы жалғастыру'],email:['Continue with email','Продолжить по email','Email арқылы жалғастыру'],apple:['Continue with Apple','Продолжить через Apple','Apple арқылы жалғастыру'],guest:['Continue as guest','Войти как гость','Қонақ ретінде кіру'],anote:['Sign-in is a preview. No account system is connected and nothing is sent or saved.','Вход пока только макет. Система аккаунтов не подключена, ничего не отправляется и не сохраняется.','Кіру әзірге макет. Аккаунт жүйесі жалғанбаған, ештеңе жіберілмейді де, сақталмайды да.'],anot2:['Not connected yet. Use guest mode.','Пока не подключено. Войдите как гость.','Әзірге жалғанбаған. Қонақ ретінде кіріңіз.'],close:['Close','Закрыть','Жабу'],
+nolib:['The chess library could not load. Check your connection and reload the page.','Шахматная библиотека не загрузилась. Проверьте соединение и обновите страницу.','Шахмат кітапханасы жүктелмеді. Байланысты тексеріп, бетті жаңартыңыз.']
+};
+/* Coach canned replies: topic -> [en,ru,kk] -> [quick, detailed] */
+const RP={
+why:[['In the sample game, 7…Ke6 pulled the king into the open. Ke8 was safer.','Before moving your king, count how many enemy pieces can reach it in two moves. In the sample, White’s queen and knight attack together after Ke6 and Black cannot cover the squares in time. Lesson: a king in the middle is a target while the opponent is developed. (Prewritten text, not engine output.)'],['В примере 7…Кре6 вывело короля на открытое место. Кре8 было безопаснее.','Перед ходом королём посчитайте, сколько фигур соперника достанут его за два хода. В примере после Кре6 ферзь и конь белых атакуют вместе, а чёрные не успевают закрыть поля. Вывод: король в центре становится мишенью, пока соперник развит. (Заготовленный текст, не результат движка.)'],['Үлгіде 7…Кре6 патшаны ашық жерге шығарды. Кре8 қауіпсіздеу еді.','Патшамен жүргенше, қарсылас фигураларының екі жүрісте оған жете алатынын санаңыз. Үлгіде Кре6-дан кейін ақтардың ферзі мен аты бірге шабуылдайды, қаралар өрістерді үлгермей жабады. Қорытынды: қарсылас дамыған кезде ортадағы патша нысанаға айналады. (Алдын ала жазылған мәтін, қозғалтқыш нәтижесі емес.)']],
+open:[['Develop knights and bishops, fight for the center, castle early.','Every opening move should add a piece to the game or take central space. Avoid early queen trips and pawn grabs, since they cost time. As White, play e4 or d4, develop knights before bishops, and castle within about ten moves.'],['Выводите коней и слонов, боритесь за центр, рокируйтесь раньше.','Каждый ход в дебюте должен вводить фигуру в игру или занимать центр. Не гоняйте ферзя и не хватайте пешки без нужды: это потеря времени. Белыми играйте e4 или d4, выводите коней раньше слонов, рокируйтесь примерно за десять ходов.'],['Аттар мен офицерлерді шығарыңыз, орталық үшін күресіңіз, ерте рокировка жасаңыз.','Ашылудағы әр жүріс фигураны ойынға қосуы немесе орталықты алуы керек. Ферзьді ертерек жүргізбеңіз, пешка жинамаңыз: бұл уақытты жоғалтады. Ақтармен e4 немесе d4 ойнап, аттарды офицерлерден бұрын шығарып, он шақты жүрісте рокировка жасаңыз.']],
+tac:[['Look for forks, pins and skewers: one move that attacks two things.','A fork hits two pieces at once, a pin freezes a piece because something worth more stands behind it, and a skewer is a pin in reverse. Each turn, scan checks, captures and threats for both sides. The Training tab has a knight fork to try.'],['Ищите вилки, связки и сквозные удары: один ход, две цели.','Вилка бьёт две фигуры сразу, связка обездвиживает фигуру, за которой стоит более ценная, а сквозной удар — это связка наоборот. На каждом ходу просматривайте шахи, взятия и угрозы обеих сторон. В разделе тренировок есть задача на вилку конём.'],['Айыр, байлау және өтпелі соққыны іздеңіз: бір жүріс, екі нысана.','Айыр екі фигураны бірден соғады, байлау фигураны қозғалтпайды, себебі артында құндырақ фигура тұр, ал өтпелі соққы — кері байлау. Әр жүрісте екі жақтың шахтарын, алуларын және қауіптерін қарап шығыңыз. Жаттығу бөлімінде атпен айыр есебі бар.']],
+end:[['Bring the king to the center and push passed pawns.','With queens off, the king is a strong piece. Count pawn races before committing, keep rooks behind passed pawns, and learn the basic opposition. Rook endings appear most often, so they deserve study time.'],['Ведите короля в центр и двигайте проходные пешки.','Когда ферзи сняты, король становится сильной фигурой. Перед гонкой пешек посчитайте варианты, ставьте ладьи за проходными и выучите основы оппозиции. Ладейные эндшпили встречаются чаще всего, им стоит уделить время.'],['Патшаны орталыққа апарыңыз, өтпелі пешкаларды алға жүргізіңіз.','Ферзьдер алынғанда патша күшті фигураға айналады. Пешка жарысына кірмес бұрын санап көріңіз, қашарларды өтпелі пешкалардың артына қойыңыз, оппозицияның негізін үйреніңіз. Қашар эндшпильдері жиі кездеседі, оған уақыт бөлген жөн.']],
+fb:[['I only have a few prewritten answers. Ask about a mistake, openings, tactics or endgames.','A real coach needs a language model and a secure server, and neither is connected here. For now, try the chips above.'],['У меня пока несколько заготовок. Спросите про ошибку, дебюты, тактику или эндшпиль.','Для настоящего тренера нужны языковая модель и защищённый сервер, здесь их нет. Пока попробуйте кнопки выше.'],['Менде әзірге бірнеше дайын жауап бар. Қате, ашылу, тактика немесе эндшпиль туралы сұраңыз.','Нағыз жаттықтырушыға тілдік модель мен қауіпсіз сервер керек, мұнда олар жоқ. Әзірге жоғарыдағы батырмаларды қолданыңыз.']]
+};
+/* ===== Helpers & state ===== */
+const OK=typeof Chess==='function';
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const st={get(k,d){try{const v=localStorage.getItem('cs_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('cs_'+k,JSON.stringify(v))}catch(e){}}};
+const LI={en:0,ru:1,kk:2};
+let lang=st.get('lang',null);
+if(!(lang in LI)){const n=(navigator.language||'en').slice(0,2);lang=n in LI?n:'en'}
+const t=k=>{const a=T[k];return a?(a[LI[lang]]||a[0]):k};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fill=(s,...v)=>v.reduce((a,x)=>a.replace('%',x),s);
+const toast=m=>{const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),2600)};
+const S=Object.assign({theme:matchMedia('(prefers-color-scheme: light)').matches?'light':'dark',board:'slate',coords:true,level:1,name:'Guest'},st.get('settings',{}));
+const saveS=()=>st.set('settings',S);
+function applyS(){const d=document.documentElement;d.dataset.theme=S.theme;d.dataset.board=S.board;d.lang=lang}
+let tick=null;
+/* ===== Demo data (all labeled as sample in the UI) ===== */
+const SAMPLE=['e4','e5','Nf3','Nc6','Bc4','Nf6','Ng5','d5','exd5','Nxd5','Nxf7','Kxf7','Qf3+','Ke6','Nc3','Ncb4','O-O','c6','d4'];
+const SC=['best','best','best','best','best','best','excellent','best','best','inacc','excellent','good','best','mistake','best','good','good','blunder','best'];
+const SE=[.2,.3,.2,.3,.2,.3,.3,.4,.3,.4,.9,1.1,.9,1,2.4,2.5,2.1,2.2,4.6,4.8];
+const SA={10:'Na5',14:'Ke8',18:'Kd7'};
+const GAMES=[['Aigerim_K','W','2026-11-08',1388,34,1,'w'],['Dastan77','L','2026-11-07',1452,41,1,'b'],['Nurlan_B','W','2026-11-05',1301,27,0,'w'],['SofiaChess','D','2026-11-03',1410,58,1,'b'],['Timur_R','L','2026-11-01',1475,36,0,'w'],['Alina_M','W','2026-10-29',1366,45,1,'b']];
+const RATING=[1310,1325,1318,1350,1372,1361,1395,1410,1402,1420];
+const PEOPLE=[['Aigerim_K',1388],['Dastan77',1452],['Nurlan_B',1301],['SofiaChess',1410],['Timur_R',1475],['Alina_M',1366],['Bauyrzhan',1299],['Elena_P',1520]];
+const PUZ=[{id:'p1',fen:'6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',sol:'Ra8#',cat:'king',lv:0},{id:'p2',fen:'r3k3/8/8/3N4/8/8/8/4K3 w - - 0 1',sol:'Nc7+',cat:'tactics',lv:1},{id:'p3',fen:'7k/5K2/8/8/8/8/8/6Q1 w - - 0 1',sol:'Qg7#',cat:'endgames',lv:0},{id:'p4',fen:'6rk/6pp/8/6N1/8/8/8/4K3 w - - 0 1',sol:'Nf7#',cat:'calc',lv:2},{id:'p5',fen:'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 2 3',sol:'Qxf7#',cat:'openings',lv:0},{id:'p6',fen:'8/4P3/8/8/8/8/k7/4K3 w - - 0 1',sol:'e8=Q',cat:'strategy',lv:1}];
+const G={K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟'};
+/* ===== Chessboard component ===== */
+function Board(el,o={}){
+  if(!OK){el.className='';el.innerHTML=`<p class="note">${t('nolib')}</p>`;return{g:null,draw(){}}}
+  const b={el,g:o.game||new Chess(o.fen),sel:null,flip:!!o.flip,last:null,hint:o.hint||null,o};
+  b.draw=()=>{
+    const g=b.g,bd=g.board(),tg=b.sel?g.moves({square:b.sel,verbose:true}).map(m=>m.to):[];
+    let ck=null;if(g.in_check())for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=bd[r][c];if(p&&p.type==='k'&&p.color===g.turn())ck='abcdefgh'[c]+(8-r)}
+    let h='';
+    for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){
+      const r=b.flip?7-dr:dr,c=b.flip?7-dc:dc,sq='abcdefgh'[c]+(8-r),p=bd[r][c];
+      let cl='sq '+((r+c)%2?'d':'l');
+      if(sq===b.sel)cl+=' sel';if(tg.includes(sq))cl+=p?' cap':' tgt';
+      if(b.last&&b.last.includes(sq))cl+=' last';if(sq===ck)cl+=' chk';if(b.hint&&b.hint.includes(sq))cl+=' hint';
+      h+=`<button class="${cl}" data-sq="${sq}" aria-label="${sq}${p?' '+(p.color==='w'?'white ':'black ')+p.type:''}">${p?`<i class="${p.color}">${G[p.type.toUpperCase()]}\uFE0E</i>`:''}${dc===0?`<small class="r">${8-r}</small>`:''}${dr===7?`<small class="f">${'abcdefgh'[c]}</small>`:''}</button>`;
+    }
+    el.className='board'+(S.coords?' co':'');el.innerHTML=h;
+  };
+  el.onclick=e=>{
+    const s=e.target.closest('.sq');if(!s||!o.interactive)return;
+    const sq=s.dataset.sq,g=b.g;
+    if(b.sel&&g.moves({square:b.sel,verbose:true}).some(m=>m.to===sq)){
+      const mv=g.move({from:b.sel,to:sq,promotion:'q'});b.sel=null;b.last=[mv.from,mv.to];b.draw();o.onMove&&o.onMove(mv);return;
+    }
+    const p=g.get(sq);b.sel=p&&p.color===g.turn()&&(!o.allow||o.allow(p.color))?sq:null;b.draw();
+  };
+  b.draw();return b;
+}
+/* ===== Small chart helpers ===== */
+function line(a){const w=320,h=110,mn=Math.min(...a)-10,mx=Math.max(...a)+10,x=i=>10+i*(w-20)/(a.length-1),y=v=>h-10-(v-mn)/(mx-mn)*(h-20);
+  return`<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(t('s_rating'))}: ${a[0]} → ${a[a.length-1]}"><polyline fill="none" stroke="var(--ac)" stroke-width="2.5" points="${a.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>${a.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="var(--ac)"/>`).join('')}</svg>`}
+const meter=(p,c='var(--ac)')=>`<div class="bar"><i style="width:${p}%;background:${c}"></i></div>`;
+const demoTag=()=>`<span class="tag">${t('sample')}</span>`;
+const resName=r=>t(r==='W'?'win':r==='D'?'draw':'loss');
+/* ===== Views ===== */
+const V={};
+V.landing=[()=>`<section class="wrap hero"><div><h1>${t('h1')}</h1><p class="lead">${t('lead')}</p><div class="row"><button class="btn" data-go="dashboard">${t('open')}</button><button class="btn ghost" data-auth>${t('signin')}</button></div></div><div><div id="hbd" class="board"></div><p class="note" id="hn" style="min-height:3em"></p></div></section>
+<section class="wrap grid g3"><div class="feat"><h3>${t('f1')}</h3><p class="mu">${t('f1d')}</p></div><div class="feat"><h3>${t('f2')}</h3><p class="mu">${t('f2d')}</p></div><div class="feat"><h3>${t('f3')}</h3><p class="mu">${t('f3d')}</p></div></section>
+<section class="wrap" style="max-width:760px"><h2>${t('diffh')}</h2><p>${t('diffp')}</p></section>`,
+()=>{const b=Board($('#hbd'),{});if(!b.g)return;const mv=SAMPLE.slice(0,14),step=i=>{const m=b.g.move(mv[i]);b.last=[m.from,m.to];b.draw()},end=()=>{b.hint=['e6','e8'];b.draw();$('#hn').textContent=t('hn')};
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){mv.forEach((_,i)=>step(i));end();return}
+  let i=0;tick=setInterval(()=>{if(i<mv.length)step(i++);else{clearInterval(tick);end()}},750)}];
+
+const solvedN=()=>Object.keys(st.get('solved',{})).length;
+V.dashboard=[()=>{const w=GAMES.filter(g=>g[1]==='W').length,d=GAMES.filter(g=>g[1]==='D').length,l=GAMES.length-w-d;
+return`<div class="wrap"><h1>${esc(S.name==='Guest'?t('hi'):S.name)} ${demoTag()}</h1>
+<div class="grid g3"><div class="card"><div class="mu">${t('rating')}</div><div class="big">${RATING[RATING.length-1]}</div></div><div class="card"><div class="mu">${t('acc')}</div><div class="big">78%</div>${S.level===2?`<div class="note">${t('acpl')}</div>`:''}</div><div class="card"><div class="mu">${t('record')}</div><div class="big">${w} / ${d} / ${l}</div></div></div>
+<div class="grid g2" style="margin-top:16px"><div class="card"><h3>${t('recent')}</h3><table>${GAMES.slice(0,4).map(g=>`<tr><td>${g[0]}</td><td>${resName(g[1])}</td><td class="mu">${g[2]}</td></tr>`).join('')}</table></div>
+<div class="card"><h3>${t('weak')}</h3>${['w1','w2','w3'].map((k,i)=>`<p>${t(k)}${meter([70,55,40][i],'var(--warn)')}</p>`).join('')}</div>
+<div class="card"><h3>${t('prog')}</h3><div class="big">${solvedN()}/${PUZ.length}</div>${meter(solvedN()/PUZ.length*100)}<p><button class="btn sm" data-go="training">${t('rec')}</button></p></div>
+<div class="card"><h3>${t('tip')} ${demoTag()}</h3><p>${t('tipx')}</p><button class="btn sm ghost" data-go="coach">${t('coach')}</button></div></div></div>`}];
+
+let P=null,PB=null;const TC={bullet:60,blitz:300,rapid:600,classical:1800};
+function pNew(){const o=P||{mode:'ai',tc:'blitz',side:'w'};P={mode:o.mode,tc:o.tc,side:o.side,over:null,g:OK?new Chess():null,w:TC[o.tc],b:TC[o.tc]}}
+const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+V.play=[()=>{if(!P)pNew();const op=(o,k,v)=>`<option value="${o}"${v===o?' selected':''}>${t(k)}</option>`;
+return`<div class="wrap"><h1>${t('play')}</h1><p class="note">${t('playnote')}</p><div class="play"><div id="pbd" class="board"></div><div class="card"><div class="clocks"><div id="cw"></div><div id="cb"></div></div><p id="pst" style="font-weight:600;min-height:1.6em"></p>
+<div class="grid g2" style="gap:0 12px"><label>${t('mode')}<select id="pm">${op('ai','m_ai',P.mode)}${op('friend','m_fr',P.mode)}</select></label><label>${t('tcl')}<select id="ptc">${['bullet','blitz','rapid','classical'].map(k=>op(k,k,P.tc)).join('')}</select></label><label>${t('side')}<select id="ps">${op('w','wn',P.side)}${op('b','bn',P.side)}</select></label></div>
+<div class="row"><button class="btn" id="pn">${t('newg')}</button><button class="btn ghost" id="pu">${t('undo')}</button><button class="btn ghost" id="pf">${t('flip')}</button><button class="btn ghost" id="pr">${t('resign')}</button></div>
+<h3>${t('moves')}</h3><div class="ml" id="pl"></div></div></div></div>`},
+()=>{PB=Board($('#pbd'),{game:P.g,interactive:true,flip:P.side==='b',allow:c=>!P.over&&(P.mode==='friend'||c===P.side),onMove:()=>{after()}});if(!PB.g)return;
+  const name=c=>c==='w'?t('wn'):t('bn');
+  function draw(){PB.draw();const g=P.g;let s;
+    if(P.over)s=P.over;else if(g.in_checkmate())s=fill(t('mate'),name(g.turn()==='w'?'b':'w'));else if(g.in_stalemate())s=t('stale');else if(g.in_draw())s=t('drawn');else s=fill(t('tm'),name(g.turn()))+(g.in_check()?' '+t('check'):'');
+    if(!P.over&&g.game_over())P.over=s;
+    $('#pst').textContent=s;
+    $('#cw').innerHTML=`<small>${t('wn')}</small>${fmt(P.w)}`;$('#cb').innerHTML=`<small>${t('bn')}</small>${fmt(P.b)}`;
+    const run=!P.over&&g.history().length>0;$('#cw').classList.toggle('on',run&&g.turn()==='w');$('#cb').classList.toggle('on',run&&g.turn()==='b');
+    const h=g.history();let m='';for(let i=0;i<h.length;i+=2)m+=`<span>${i/2+1}.</span><button disabled>${h[i]}</button><button disabled>${h[i+1]||''}</button>`;$('#pl').innerHTML=m;$('#pl').scrollTop=1e5}
+  function ai(){if(P.over||P.mode!=='ai'||P.g.turn()===P.side)return;setTimeout(()=>{if(!PB.el.isConnected||P.over||P.g.turn()===P.side)return;const ms=P.g.moves({verbose:true});if(!ms.length)return;const caps=ms.filter(m=>m.captured||m.san.includes('+')),pool=caps.length&&Math.random()<.6?caps:ms,m=pool[Math.floor(Math.random()*pool.length)];P.g.move(m.san);PB.last=[m.from,m.to];draw()},450)}
+  function after(){draw();ai()}
+  const keep=()=>{P.mode=$('#pm').value;P.tc=$('#ptc').value;P.side=$('#ps').value};
+  $('#pn').onclick=()=>{keep();pNew();route()};
+  $('#pu').onclick=()=>{if(P.over)return;P.g.undo();if(P.mode==='ai'&&P.g.turn()!==P.side)P.g.undo();PB.sel=null;PB.last=null;draw()};
+  $('#pf').onclick=()=>{PB.flip=!PB.flip;draw()};
+  $('#pr').onclick=()=>{if(!P.over){P.over=fill(t('resigned'),name(P.mode==='ai'?P.side:P.g.turn()));draw()}};
+  ['pm','ptc','ps'].forEach(i=>$('#'+i).onchange=()=>{keep();pNew();route()});
+  tick=setInterval(()=>{if(P.over||!P.g.history().length)return;const s=P.g.turn();P[s]--;if(P[s]<=0){P[s]=0;P.over=fill(t('timeout'),name(s))}draw()},1000);
+  draw();ai()}];
+
+let A=null;
+function buildA(sans,meta,sample){const g=OK?new Chess():null,fens=[],lm=[];if(!g)return null;fens.push(g.fen());lm.push(null);const ok=[];
+  for(const s of sans){const m=g.move(s);if(!m)break;ok.push(m.san);fens.push(g.fen());lm.push([m.from,m.to])}
+  return{sans:ok,fens,lm,meta,sample,ply:0}}
+const sgn=v=>(v>0?'+':'')+v.toFixed(1);
+V.analysis=[()=>{if(!A)A=buildA(SAMPLE,{w:'Sample_White',b:'Sample_Black'},true);
+return`<div class="wrap"><h1>${t('analysis')}</h1><div class="row"><label style="margin:0"><input type="file" id="pf" accept=".pgn,.txt"> ${t('pgn')}</label></div><div class="play"><div><div id="abd" class="board"></div><div class="row"><button class="btn ghost" data-n="-99">⏮</button><button class="btn ghost" data-n="-1">◀</button><button class="btn ghost" data-n="1">▶</button><button class="btn ghost" data-n="99">⏭</button></div></div><div id="ap"></div></div></div>`},
+()=>{if(!A){$('#abd').innerHTML=`<p class="note">${t('nolib')}</p>`;return}
+  const B=Board($('#abd'),{fen:A.fens[A.ply]});const ev=A.sample;
+  function show(){B.g.load(A.fens[A.ply]);B.last=A.lm[A.ply];B.hint=null;B.draw();
+    const p=A.ply,cls=ev?SC[p-1]:null;let ex=t('start');
+    if(p>0){const mvn=Math.ceil(p/2),san=A.sans[p-1];ex=`<b>${mvn}${p%2?'.':'…'} ${esc(san)}</b>`;
+      if(ev){ex+=` <span class="dot c-${cls}"></span>${t('c_'+cls)}<p>${t('e_'+cls)} ${fill(t('swing'),sgn(SE[p-1]),sgn(SE[p]))}</p>`+(SA[p]?`<p>${t('alt')}: <b>${SA[p]}</b></p>`:'')}}
+    let ml='';for(let i=0;i<A.sans.length;i+=2)ml+=`<span>${i/2+1}.</span>`+[i,i+1].map(j=>A.sans[j]?`<button data-p="${j+1}"${A.ply===j+1?' aria-current="true"':''}>${ev?`<span class="dot c-${SC[j]}"></span>`:''}${esc(A.sans[j])}</button>`:'<span></span>').join('');
+    let gr='',sum='',crit='';
+    if(ev){const w=320,h=90,pts=SE.map((v,i)=>`${i*w/(SE.length-1)},${h/2-Math.max(-5,Math.min(5,v))*(h/10)}`);
+      gr=`<h3>${t('graph')} ${demoTag()}</h3><svg class="chart ev" id="eg" viewBox="0 0 ${w} ${h}"><line x1="0" x2="${w}" y1="${h/2}" y2="${h/2}" stroke="var(--bd)"/><polyline fill="none" stroke="var(--ac)" stroke-width="2.5" points="${pts.join(' ')}"/><circle cx="${p*w/(SE.length-1)}" cy="${h/2-Math.max(-5,Math.min(5,SE[p]))*(h/10)}" r="5" fill="var(--warn)"/></svg>`;
+      const cn={};SC.forEach(c=>cn[c]=(cn[c]||0)+1);
+      sum=`<h3>${t('summary')}</h3><p>${['best','excellent','good','inacc','mistake','blunder'].map(c=>`<span class="dot c-${c}"></span>${t('c_'+c)}: ${cn[c]||0}&nbsp;&nbsp;`).join(' ')}</p><p class="note">${t('opening')}: ${t('opn')}</p>`;
+      crit=`<h3>${t('critical')}</h3><div class="row">${SC.map((c,i)=>c==='mistake'||c==='blunder'||c==='inacc'?`<button class="chip" data-p="${i+1}"><span class="dot c-${c}"></span>${Math.ceil((i+1)/2)}${(i+1)%2?'.':'…'} ${SAMPLE[i]}</button>`:'').join('')}</div>`}
+    $('#ap').innerHTML=`<div class="card"><p class="note">${ev?t('samplelbl'):t('noeval')}</p><p class="mu">${esc(A.meta.w)} – ${esc(A.meta.b)}</p>${gr}<div class="ml" style="margin:8px 0">${ml}</div><div style="min-height:5em">${ex}</div>${sum}${crit}</div>`;
+    $$('#ap [data-p]').forEach(x=>x.onclick=()=>{A.ply=+x.dataset.p;show()});
+    const eg=$('#eg');if(eg)eg.onclick=e=>{const r=eg.getBoundingClientRect();A.ply=Math.round((e.clientX-r.left)/r.width*(SE.length-1));show()}}
+  const go=n=>{A.ply=Math.max(0,Math.min(A.sans.length,A.ply+n));show()};
+  $$('[data-n]').forEach(b=>b.onclick=()=>go(+b.dataset.n));
+  A.go=go;
+  $('#pf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const g=new Chess();if(!g.load_pgn(await f.text()))throw 0;const h=g.header();
+    A=buildA(g.history(),{w:h.White||'?',b:h.Black||'?'},false);if(!A||!A.sans.length)throw 0;route()}catch(x){toast(t('pgnerr'))}};
+  show()}];
+document.addEventListener('keydown',e=>{if(A&&A.go&&location.hash==='#/analysis'&&!/INPUT|SELECT/.test(document.activeElement.tagName)){if(e.key==='ArrowRight')A.go(1);if(e.key==='ArrowLeft')A.go(-1)}});
+
+let depth=st.get('depth',0),chat=st.get('chat',[]);
+function reply(q){const s=q.toLowerCase();const k=/opening|дебют|ашылу|e4|d4/.test(s)?'open':/tactic|fork|pin|тактик|вилк|связк|тактика|айыр/.test(s)?'tac':/endgame|эндшпиль|аяқталу/.test(s)?'end':/why|bad|mistake|wrong|почему|плох|ошибк|неге|нашар|қате/.test(s)?'why':'fb';return RP[k][LI[lang]][depth]}
+V.coach=[()=>`<div class="wrap" style="max-width:760px"><h1>${t('coach')}</h1><p class="note">${t('cdemo')}</p><div class="card"><div class="chat" id="ch" aria-live="polite"></div><div class="row">${['ch1','ch2','ch3','ch4'].map((k,i)=>`<button class="chip" data-q="${t(k)}" data-t="${['why','open','tac','end'][i]}">${t(k)}</button>`).join('')}</div>
+<div class="row"><button class="chip" data-d="0" aria-pressed="${depth===0}">${t('quick')}</button><button class="chip" data-d="1" aria-pressed="${depth===1}">${t('detail')}</button><button class="chip" id="cc" style="margin-left:auto">${t('clear')}</button></div>
+<div class="row"><input type="text" id="ci" placeholder="${t('cph')}" style="flex:1;min-width:0" aria-label="${t('cph')}"><button class="btn" id="cs">${t('send')}</button></div></div></div>`,
+()=>{const ch=$('#ch');
+  const draw=()=>{ch.innerHTML=(chat.length?chat:[{r:'c',x:t('cintro')}]).map(m=>`<div class="msg ${m.r==='u'?'u':''}">${esc(m.x)}</div>`).join('');ch.scrollTop=1e5};
+  const ask=(q,topic)=>{if(!q.trim())return;chat.push({r:'u',x:q});chat.push({r:'c',x:topic?RP[topic][LI[lang]][depth]:reply(q)});chat=chat.slice(-30);st.set('chat',chat);draw()};
+  $('#cs').onclick=()=>{ask($('#ci').value);$('#ci').value=''};$('#ci').onkeydown=e=>{if(e.key==='Enter')$('#cs').click()};
+  $$('[data-q]').forEach(b=>b.onclick=()=>ask(b.dataset.q,b.dataset.t));
+  $$('[data-d]').forEach(b=>b.onclick=()=>{depth=+b.dataset.d;st.set('depth',depth);$$('[data-d]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  $('#cc').onclick=()=>{chat=[];st.set('chat',chat);draw()};draw()}];
+
+const Tr={lv:null,cat:'all',i:0};
+V.training=[()=>{if(Tr.lv===null)Tr.lv=S.level;
+return`<div class="wrap"><h1>${t('training')}</h1><p class="note">${t('tdemo')}</p><div class="row">${[0,1,2].map(i=>`<button class="chip" data-lv="${i}" aria-pressed="${Tr.lv===i}">${t('lv'+i)}</button>`).join('')}</div><div class="row">${['all','tactics','openings','endgames','strategy','positional','king','calc'].map(c=>`<button class="chip" data-cat="${c}" aria-pressed="${Tr.cat===c}">${t('cat_'+c)}</button>`).join('')}</div>
+<div class="play"><div id="tbd" class="board"></div><div class="card" id="tp"></div></div></div>`},
+()=>{const list=PUZ.filter(p=>p.lv===Tr.lv&&(Tr.cat==='all'||p.cat===Tr.cat));
+  $$('[data-lv]').forEach(b=>b.onclick=()=>{Tr.lv=+b.dataset.lv;Tr.i=0;route()});$$('[data-cat]').forEach(b=>b.onclick=()=>{Tr.cat=b.dataset.cat;Tr.i=0;route()});
+  const tp=$('#tp');
+  if(!list.length){$('#tbd').outerHTML='<div id="tbd"></div>';tp.innerHTML=`<p>${t('tempty')}</p><p class="mu">${t('tprog').replace('%',solvedN()+'/'+PUZ.length)}</p>`;return}
+  const p=list[Tr.i%list.length],done=st.get('solved',{}),n=PUZ.indexOf(p)+1;
+  const msg=(x,c)=>{$('#tm').innerHTML=x;$('#tm').style.color=c||''};
+  tp.innerHTML=`<h3>${t('cat_'+p.cat)} ${demoTag()}</h3><p>${t('ask')}</p><p id="tm" style="min-height:4.5em"></p><p class="mu">${fill(t('tprog'),solvedN()+'/'+PUZ.length)}</p>${meter(solvedN()/PUZ.length*100)}<div class="row"><button class="btn" id="tn">${t('next')}</button><button class="btn ghost" id="tr">${t('treset')}</button></div>`;
+  const B=Board($('#tbd'),{fen:p.fen,interactive:true,allow:c=>c==='w',onMove:mv=>{
+    if(mv.san===p.sol||(p.sol.endsWith('#')&&mv.san.endsWith('#'))){done[p.id]=1;st.set('solved',done);msg(`<b>${t('okm')}</b> ${t('ex'+n)}`,'var(--ok)');B.o.interactive=false}
+    else{msg(t('no'),'var(--bad)');setTimeout(()=>{B.g.undo();B.last=null;B.draw()},700)}}});
+  $('#tn').onclick=()=>{Tr.i++;route()};$('#tr').onclick=()=>{st.set('solved',{});route()}}];
+
+V.stats=[()=>{const mk=(o,v)=>`<p>${o}<span class="mu" style="float:right">${v}</span>${meter(v,'var(--ac)')}</p>`;
+return`<div class="wrap"><h1>${t('stats')} ${demoTag()}</h1><div class="grid g2">
+<div class="card"><h3>${t('s_rating')}</h3>${line(RATING)}</div>
+<div class="card"><h3>${t('s_wdl')}</h3><div class="bar" style="height:16px"><i style="width:50%;background:var(--ok)"></i><i style="width:17%;background:var(--mu)"></i><i style="width:33%;background:var(--bad)"></i></div><p class="mu">${t('win')} 50% · ${t('draw')} 17% · ${t('loss')} 33%</p><h3>${t('s_color')}</h3>${mk(t('wn'),54)}${mk(t('bn'),46)}</div>
+<div class="card"><h3>${t('s_open')}</h3>${mk('Italian Game',62)}${mk('Sicilian Defense',44)}${mk('Queen’s Gambit',51)}</div>
+<div class="card"><h3>${t('s_err')}</h3><table><tr><th></th><th>${t('c_inacc')}</th><th>${t('c_mistake')}</th><th>${t('c_blunder')}</th></tr><tr><td>${t('ph_o')}</td><td>4</td><td>2</td><td>0</td></tr><tr><td>${t('ph_m')}</td><td>7</td><td>4</td><td>3</td></tr><tr><td>${t('ph_e')}</td><td>5</td><td>3</td><td>2</td></tr></table></div>
+<div class="card"><h3>${t('s_tac')}</h3>${mk(t('fork'),38)}${mk(t('pin'),27)}${mk(t('backrank'),19)}</div></div></div>`}];
+
+V.history=[()=>`<div class="wrap"><h1>${t('history')} ${demoTag()}</h1><div class="card" style="overflow-x:auto"><table><tr><th>${t('h_opp')}</th><th>${t('h_res')}</th><th>${t('h_date')}</th><th>${t('h_rate')}</th><th>${t('h_mv')}</th><th>${t('h_st')}</th><th></th></tr>${GAMES.map((g,i)=>`<tr><td>${g[0]}</td><td>${resName(g[1])}</td><td>${g[2]}</td><td>${g[3]}</td><td>${g[4]}</td><td>${g[5]?t('an'):t('nan')}</td><td><button class="btn sm" data-g="${i}">${t('o2')}</button></td></tr>`).join('')}</table></div></div>`,
+()=>$$('[data-g]').forEach(b=>b.onclick=()=>{const g=GAMES[+b.dataset.g];A=buildA(SAMPLE,g[6]==='w'?{w:t('hi'),b:g[0]}:{w:g[0],b:t('hi')},true);location.hash='#/analysis'})];
+
+const F={friends:['Aigerim_K','Nurlan_B','SofiaChess'],reqs:['Timur_R','Alina_M'],inv:['Dastan77'],sent:{},q:''};
+V.friends=[()=>`<div class="wrap"><h1>${t('friends')} ${demoTag()}</h1><div class="grid g2"><div class="card"><h3>${t('fl')}</h3>${F.friends.length?F.friends.map(n=>`<div class="row"><b style="flex:1">${n}</b><button class="btn sm ghost" data-i="${n}">${t('finv')}</button></div>`).join(''):`<p class="mu">${t('fnone')}</p>`}</div>
+<div class="card"><h3>${t('freq')}</h3>${F.reqs.length?F.reqs.map(n=>`<div class="row"><b style="flex:1">${n}</b><button class="btn sm" data-a="${n}">${t('facc')}</button><button class="btn sm ghost" data-r="${n}">${t('fdec')}</button></div>`).join(''):`<p class="mu">${t('fnone')}</p>`}</div>
+<div class="card"><h3>${t('finc')}</h3>${F.inv.length?F.inv.map(n=>`<p>${fill(t('finvtxt'),n)}</p><div class="row"><button class="btn sm" data-ia="${n}">${t('facc')}</button><button class="btn sm ghost" data-ir="${n}">${t('fdec')}</button></div>`).join(''):`<p class="mu">${t('fnone')}</p>`}</div>
+<div class="card"><h3>${t('fsearch')}</h3><input type="search" id="fq" placeholder="${t('fsearch')}" value="${esc(F.q)}" style="width:100%" aria-label="${t('fsearch')}"><div id="fr"></div></div></div></div>`,
+()=>{const re=()=>{const q=F.q.toLowerCase();$('#fr').innerHTML=PEOPLE.filter(p=>!F.friends.includes(p[0])&&!F.reqs.includes(p[0])&&p[0].toLowerCase().includes(q)).slice(0,5).map(p=>`<div class="row"><span style="flex:1">${p[0]} <span class="mu">${p[1]}</span></span><button class="btn sm" data-add="${p[0]}"${F.sent[p[0]]?' disabled':''}>${F.sent[p[0]]?t('fsent'):t('fadd')}</button></div>`).join('')||`<p class="mu">${t('fnone')}</p>`;
+    $$('[data-add]').forEach(b=>b.onclick=()=>{F.sent[b.dataset.add]=1;toast(t('fsent'));re()})};
+  $('#fq').oninput=e=>{F.q=e.target.value;re()};re();
+  const on=(a,f)=>$$(`[data-${a}]`).forEach(b=>b.onclick=()=>{f(b.dataset[a]);route()});
+  on('i',n=>toast(t('finvsent')));on('a',n=>{F.reqs=F.reqs.filter(x=>x!==n);F.friends.push(n)});on('r',n=>F.reqs=F.reqs.filter(x=>x!==n));
+  on('ia',n=>{F.inv=F.inv.filter(x=>x!==n);P=null;pNew();P.mode='friend';location.hash='#/play'});on('ir',n=>F.inv=F.inv.filter(x=>x!==n))}];
+
+V.profile=[()=>`<div class="wrap" style="max-width:760px"><h1>${t('profile')}</h1><div class="card"><div class="row" style="gap:16px"><div class="av" aria-hidden="true">${esc((S.name||'G')[0].toUpperCase())}</div><div><h3 style="margin:0">${esc(S.name)}</h3><p class="mu" style="margin:0">${t('rating')} ${RATING[RATING.length-1]} ${demoTag()} · ${t('style')}: ${t('stylev')} ${demoTag()}</p></div></div><p class="note">${t('pdemo')}</p>
+<label>${t('uname')}<input type="text" id="un" maxlength="24" value="${esc(S.name)}"></label>
+<div class="grid g2" style="gap:0 14px"><label>${t('lvl')}<select id="sl">${[0,1,2].map(i=>`<option value="${i}"${S.level===i?' selected':''}>${t('lv'+i)}</option>`).join('')}</select></label>
+<label>${t('language')}<select id="sg">${[['en','English'],['ru','Русский'],['kk','Қазақша']].map(l=>`<option value="${l[0]}"${lang===l[0]?' selected':''}>${l[1]}</option>`).join('')}</select></label>
+<label>${t('theme')}<select id="st"><option value="dark"${S.theme==='dark'?' selected':''}>${t('thd')}</option><option value="light"${S.theme==='light'?' selected':''}>${t('thl')}</option></select></label>
+<label>${t('board')}<select id="sb">${[['slate','bslate'],['sand','bsand'],['moss','bmoss']].map(b=>`<option value="${b[0]}"${S.board===b[0]?' selected':''}>${t(b[1])}</option>`).join('')}</select></label></div>
+<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sc"${S.coords?' checked':''}> ${t('coords')}</label><button class="btn" id="sv">${t('saved').replace('.','')}</button></div></div>`,
+()=>{$('#sv').onclick=()=>{S.name=($('#un').value.trim()||'Guest').slice(0,24);S.level=+$('#sl').value;S.theme=$('#st').value;S.board=$('#sb').value;S.coords=$('#sc').checked;saveS();applyS();toast(t('saved'));route()};
+  $('#sg').onchange=e=>setLang(e.target.value)}];
+/* ===== Shell: header, auth dialog, router ===== */
+const ROUTES=['dashboard','play','analysis','coach','training','stats','history','friends','profile'];
+function shell(){
+  $('#hb-bar').innerHTML=`<a class="brand" href="#/"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ChessSense AI</a><select id="lg" aria-label="${t('language')}">${[['en','EN'],['ru','RU'],['kk','KZ']].map(l=>`<option value="${l[0]}"${lang===l[0]?' selected':''}>${l[1]}</option>`).join('')}</select><button class="btn ghost sm" id="th" aria-label="${t('theme')}">${S.theme==='dark'?'☀':'☾'}</button><button class="btn sm" data-auth>${t('signin')}</button>`;
+  $('#nav').innerHTML=ROUTES.map(r=>`<a href="#/${r}" data-r="${r}">${t(r)}</a>`).join('');
+  $('#demo').textContent=t('demo');$('#foot').textContent=t('foot');
+  $('#lg').onchange=e=>setLang(e.target.value);
+  $('#th').onclick=()=>{S.theme=S.theme==='dark'?'light':'dark';saveS();applyS();shell();markNav()};
+}
+function markNav(){const h=location.hash.replace('#/','');$$('#nav a').forEach(a=>a.toggleAttribute('aria-current',a.dataset.r===h))}
+function setLang(l){lang=l;st.set('lang',l);applyS();shell();route()}
+function route(){
+  clearInterval(tick);const h=location.hash.replace('#/',''),v=V[h]&&h!=='landing'?h:'landing';
+  try{$('#app').innerHTML=V[v][0]();document.body.dataset.v=v==='landing'?'l':'a';markNav();V[v][1]&&V[v][1]()}
+  catch(e){console.error(e);$('#app').innerHTML=`<div class="wrap"><p class="note">${esc(e.message)}</p></div>`}
+}
+function openAuth(){const d=$('#auth');d.innerHTML=`<h2>${t('ah')}</h2><button class="btn ghost" data-na>${t('google')}</button><button class="btn ghost" data-na>${t('email')}</button><button class="btn ghost" data-na>${t('apple')}</button><button class="btn" data-guest>${t('guest')}</button><p class="note">${t('anote')}</p><button class="btn ghost sm" data-x>${t('close')}</button>`;
+  d.showModal?d.showModal():d.setAttribute('open','')}
+document.addEventListener('click',e=>{const x=e.target.closest('[data-go],[data-auth],[data-na],[data-guest],[data-x]');if(!x)return;
+  if(x.dataset.go){location.hash='#/'+x.dataset.go}
+  else if('auth' in x.dataset)openAuth();
+  else if('na' in x.dataset)toast(t('anot2'));
+  else{const d=$('#auth');d.close?d.close():d.removeAttribute('open');if('guest' in x.dataset)location.hash='#/dashboard'}});
+addEventListener('hashchange',route);
+applyS();shell();route();
+</script>
+</body>
+</html>
